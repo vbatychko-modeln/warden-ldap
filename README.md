@@ -34,9 +34,20 @@ Warden::Ldap.configure do |c|
 end
 ```
 
-3. Add the `ldap_config.yml` to configure connection to ldap server. See `lib/fixtures/ldap_config_sample.yml`.
+3. Add the `ldap_config.yml` to configure connection to ldap server. See `spec/fixtures/ldap_config_sample.yml`.
 
-Note: an optional configuration, `test_environments`, accepts an array of environments to mock, where authentication works as long as username and password are supplies and password is not "fail".
+## Testing
+
+Enable mocked authentication using the optional configuration `test_environments`.
+
+`test_environments` accepts an array of environments to mock, where authentication works as long as username and password are supplied, and password is not "fail".
+
+```ruby
+Warden::Ldap.configure do |c|
+  # Enable mocked authentication in the "test" and "golden" environments
+  c.test_environments = %w(test golden)
+end
+```
 
 ## Contributing
 
