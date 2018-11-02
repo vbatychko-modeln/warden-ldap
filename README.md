@@ -6,21 +6,17 @@
 
 Adds LDAP Strategy for [warden](https://github.com/wardencommunity/warden) using the [net-ldap](https://github.com/ruby-ldap/ruby-net-ldap) library.
 
-## Installation
+## Installation (Bundler & Git only)
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'warden-ldap'
+gem 'warden-ldap', git: 'https://github.com/ecraft/warden-ldap.git'
 ```
 
 And then execute:
 
     $ bundle
-
-Or install it yourself as:
-
-    $ gem install warden-ldap
 
 ## Usage
 
