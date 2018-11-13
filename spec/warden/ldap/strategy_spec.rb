@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe Warden::Ldap::Strategy do
+  before { Warden::Ldap.env = 'test' }
+
   subject { described_class.new(@env) }
 
   describe '#valid?' do
@@ -21,7 +23,7 @@ RSpec.describe Warden::Ldap::Strategy do
   end
 
   describe '#authenticte!' do
-    before :each do
+    before do
       @env = env_with_params('/', 'username' => 'test', 'password' => 'secret')
       allow(subject).to receive_messages(valid?: true)
     end
