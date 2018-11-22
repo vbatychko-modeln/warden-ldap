@@ -24,13 +24,14 @@ And then execute:
 2. Initialize the `Warden::Ldap` adapter:
 
 ```ruby
+Warden::Ldap.env = 'development' # Defaults to RACK_ENV / Rails.env
 Warden::Ldap.configure do |c|
-  c.config_file = '/absolute/path/to/config/ldap_config.yml'
-  c.env = 'test'
+  c.config_file = 'path/to/config/ldap_config.yml'
 end
 ```
 
-3. Add the `ldap_config.yml` to configure connection to ldap server. See `spec/fixtures/ldap_config_sample.yml`.
+3. Add the YAML file to configure connection to LDAP server. See below for
+   details and example content.
 
 ## Configuration
 
@@ -49,30 +50,99 @@ authorizations: &AUTHORIZATIONS
   username: <%= ENV['LDAP_USERNAME'] %>
   password: <%= ENV['LDAP_PASSWORD'] %>
   users:
+    # Where to search for users in the LDAP tree
+    #
+    # This is relative to the base in the url
+    #
+    # Example: `ou=users` here means we search from `ou=users,dc=ds,dc=renewfund,dc=com`.
+    #
+    # You can have multiple bases like in the example below.
     base:
       - ou=users
+      - ou=consultants
     scope: subtree
     filter: "(&(objectClass=user)(emailAddress=$username))"
+    # User object attributes
+    #
+    # The Warden user object will have these attributes after logging in via
+    # LDAP. Keys are target User hash keys, values are LDAP object attributes we take
+    # the value from.
+    #
+    # Example: We map the `userId` attribute from the LDAP object to the `:username` key in the Warden user `Hash`   
     attributes:
       username: "userId"
       email: "emailAddress"
   groups:
+    # Where to search for groups in the LDAP tree, works like for users.
     base:
       - ou=groups
     scope: subtree
     filter: "(&(objectClass=group)(member=$dn))"
+    # Group object attributes
+    #
+    # These group objects are accessible on the Warden user object via the `:groups` key.
+    #
+    # Works like the `users/attributes` config.
     attributes:
       name: "cn"
+      country: "country"
+      organization: "ou"
+    # Should we recursively check if the users groups give them access to more groups?
+    #
+    # Example: All members of the `Infrastructure Admin` group are
+    #          automatically also part of the `LDAP Admin` group.
     nested: true
+    # Match this group attributes `Hash` against a list of expressions.
+    #
+    # Each expression's key is added to group attributes Hash with the value
+    # `true` if the group hash contains all the values from the `values` hash.
+    #
+    # Example: The following configuration marks all groups related to a French
+    #          organizational unit with the boolean flag
+    #          `:france => true`.
+    #
+    #          - key: france
+    #            values:
+    #              country: "France"
+    #
+    # A group only need to match one expression with a key to get marked as matching
+    #
+    # Example: The following configuration marks all groups named either
+    #          regularAppUsersLdapGroup or unusualAppUsersLdapGroup as a user.
+    #
+    #          - key: user
+    #             values:
+    #               name: regularAppUsersLdapGroup
+    #          - key: user
+    #             values:
+    #               name: unusualAppUsersLdapGroup
+    #
+    matches:
+      - key: user
+        values:
+          name: regularAppUsersLdapGroup
+      - key: user
+        values:
+          name: unusualAppUsersLdapGroup
+      - key: admin
+        values:
+          name: appAdminsLdapGroup
+      - key: france
+        values:
+          country: France
+      - key: beta
+        values:
+          country: Germany
+          organization: IT
 
-test: 
+test:
   <<: *AUTHORIZATIONS
   url: ldap://localhost:1389/dc=example,dc=org
 
 development: 
   <<: *AUTHORIZATIONS
 
-production: 
+production:
   <<: *AUTHORIZATIONS
   ssl: start_tls
 ```
