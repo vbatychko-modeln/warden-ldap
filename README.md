@@ -48,18 +48,33 @@ authorizations: &AUTHORIZATIONS
   url: ldap://your.ldap.example.com/dc=ds,dc=renewfund,dc=com
   username: <%= ENV['LDAP_USERNAME'] %>
   password: <%= ENV['LDAP_PASSWORD'] %>
-  attributes:
-    username: "userId"
-    email: "emailAddress"
-  user_filter: "(&(objectClass=user)(emailAddress=$username))"
+  users:
+    base:
+      - ou=users
+    scope: subtree
+    filter: "(&(objectClass=user)(emailAddress=$username))"
+    attributes:
+      username: "userId"
+      email: "emailAddress"
+  groups:
+    base:
+      - ou=groups
+    scope: subtree
+    filter: "(&(objectClass=group)(member=$dn))"
+    attributes:
+      name: "cn"
+    nested: true
 
 test: 
   <<: *AUTHORIZATIONS
   url: ldap://localhost:1389/dc=example,dc=org
+
 development: 
   <<: *AUTHORIZATIONS
+
 production: 
   <<: *AUTHORIZATIONS
+  ssl: start_tls
 ```
 
 ### `url`
@@ -75,16 +90,56 @@ The username of the account of the LDAP server which can search for users.
 
 The password of the account of the LDAP server which can search for users.
 
-### `attributes`
+### `users/base`
 
-A Hash where the keys are the User object properties and the
-values are attributes on the User's LDAP entry.
+The LDAP treebase part of the query to find users.
 
-### `user_filter`
+### `users/scope`
+
+LDAP search scope for the query to find users.
+
+| Configuration value | Scope used |
+| ---    | ---         |
+| `base` or `base_object` |  `Net::LDAP::SearchScope_BaseObject` |
+| `level` or `single_level` |  `Net::LDAP::SearchScope_SingleLevel` |
+| `subtree` or `whole_subtree` |  `Net::LDAP::SearchScope_WholeSubtree` (default) |
+
+### `users/filter`
 
 The "search for user" query is configured using the LDAP query format.
 The string `$username` is interpolated into the query as the username of
 the user you're trying to authenticate as.
+
+### `users/attributes`
+
+A Hash where the keys are the User object properties and the
+values are attributes on the User's LDAP entry.
+
+### `groups/base`
+
+The LDAP treebase part of the query to find which groups a user belongs to.
+
+### `groups/scope`
+
+LDAP search scope for the query to find groups. See `users/scope` for
+possible configuration values.
+
+### `groups/filter`
+
+The "search for groups" query is configured using the LDAP query format.
+The string `$dn` is interpolated into the query as the distinguished name of
+the group you're constraining the authentication to.
+
+### `groups/attributes`
+
+A Hash where the keys are the Group object properties and the
+values are attributes on the Group's LDAP entry.
+
+### `groups/nested`
+
+Boolean. Default: `false`.
+
+If true, the search for groups will continue into each group.
 
 ## Testing
 

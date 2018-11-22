@@ -36,41 +36,21 @@ module Warden
         @host_pool = Warden::Ldap::HostPool.from_url(@config.url, options: options)
 
         @ldap = @host_pool.connect
-
-        @attribute = [@config.attributes].flatten
       end
 
       # Performs authentication with LDAP.
       #
       # Timeouts after configured `timeout` (default: 5).
       #
-      # @return [Boolean, nil] true if authentication was successful,
-      #   false otherwise, or nil if password was not provided
+      # @return [Object, nil] User object if authentication was successful,
+      #   otherwise nil.
       def authenticate!
         user = @user_factory.search(@username, ldap: @ldap)
 
         return unless user
 
-        @ldap.auth(user.dn, @password)
+        @ldap.auth(user.fetch(:dn), @password)
         user if @ldap.bind
-      end
-
-      # @return [Boolean] true if user is authenticated
-      def authenticated?
-        !authenticate!.nil?
-      end
-
-      # Searches LDAP directory for login name.
-      #
-      # @@return [Boolean] true if found
-      def valid_login?
-        !search_for_login.nil?
-      end
-
-      private
-
-      def ldap_host
-        @ldap.host
       end
     end
   end
