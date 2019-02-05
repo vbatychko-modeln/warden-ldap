@@ -59,6 +59,25 @@ RSpec.describe Warden::Ldap::UserFactory do
       end
     end
 
+    context 'with one incomplete user found' do
+      let(:user) do
+        double('the-user-without-an-emailAddress', dn: 'the-dn', userId: 'elmer1')
+      end
+
+      it 'returns a User hash with transformed attributes' do
+        expect(ldap).to receive(:search).with(a_hash_including(size: 1)).and_return([user])
+        # Ldap: find user's groups (zero groups)
+        expect(ldap).to receive(:search).with(a_hash_including(attributes: %w(dn cn country ou),
+                                                               scope: Net::LDAP::SearchScope_WholeSubtree)).and_return([])
+
+        expect(subject.search('elmer', ldap: ldap)).to a_hash_including(
+          dn: 'the-dn',
+          username: 'elmer1',
+          email: nil
+        )
+      end
+    end
+
     context 'with one user found with a Group' do
       before do
         user = double('the-user', dn: 'the-dn',

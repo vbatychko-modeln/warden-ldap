@@ -28,7 +28,7 @@ module Warden
 
       def process_user(user, ldap:)
         result = @user_attributes.map do |k, v|
-          value = user.send(v.to_sym)
+          value = user.send(v.to_sym) if user.respond_to?(v.to_sym)
           value = value.first if value.is_a?(Array)
 
           [k, value]
