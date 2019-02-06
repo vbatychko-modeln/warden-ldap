@@ -28,7 +28,7 @@ module Warden
 
       def process_user(user, ldap:)
         result = @user_attributes.map do |k, v|
-          value = user.send(v.to_sym)
+          value = user.send(v.to_sym) if user.respond_to?(v.to_sym)
           value = value.first if value.is_a?(Array)
 
           [k, value]
@@ -141,8 +141,12 @@ module Warden
         }
       end
 
+      # @param group [LDAP::Entry]
       def process_raw_group(group)
-        group_attributes = @group_attributes.map { |k, v| [k, group.send(v.to_sym)] }.to_h
+        group_attributes = @group_attributes.map do |target_attribute, source_attribute|
+          value = (group.respond_to?(source_attribute.to_sym) && group.send(source_attribute.to_sym) || nil)
+          [target_attribute, value]
+        end.to_h
 
         @group_matches.each do |matcher|
           values = matcher.fetch(:values)
