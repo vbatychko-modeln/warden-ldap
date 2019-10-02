@@ -2,6 +2,7 @@
 
 require 'logger'
 require 'uri'
+require 'erb'
 
 module Warden
   module Ldap
